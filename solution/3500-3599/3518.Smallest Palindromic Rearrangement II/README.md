@@ -115,7 +115,83 @@ tags:
 #### Java
 
 ```java
+class Solution {
+    private static final long CAP = 1_000_001L;
 
+    public String smallestPalindrome(String s, int k) {
+        int[] freq = new int[26];
+        for (char c : s.toCharArray()) {
+            freq[c - 'a']++;
+        }
+
+        int[] halfFreq = new int[26];
+        int halfLen = 0;
+        char midChar = 0;
+
+        // Build half-frequencies and identify middle character (if any)
+        for (int i = 0; i < 26; i++) {
+            halfFreq[i] = freq[i] / 2;
+            halfLen += halfFreq[i];
+            if (freq[i] % 2 != 0) {
+                midChar = (char) ('a' + i);
+            }
+        }
+
+        // If total permutations is less than k, it's impossible
+        if (countPermutations(halfFreq, halfLen) < k) {
+            return "";
+        }
+
+        StringBuilder left = new StringBuilder();
+
+        // Build the left half character by character
+        for (int pos = 0; pos < halfLen; pos++) {
+            for (int ch = 0; ch < 26; ch++) {
+                if (halfFreq[ch] == 0) continue;
+
+                // Try picking character 'ch'
+                halfFreq[ch]--;
+                long count = countPermutations(halfFreq, halfLen - pos - 1);
+
+                if (count >= k) {
+                    left.append((char) ('a' + ch));
+                    break; // Fix this character and move to next position
+                } else {
+                    k -= count;
+                    halfFreq[ch]++; // Backtrack and try next character
+                }
+            }
+        }
+
+        // Reconstruct the full palindrome
+        StringBuilder result = new StringBuilder(left);
+        if (midChar != 0) {
+            result.append(midChar);
+        }
+        result.append(new StringBuilder(left).reverse());
+
+        return result.toString();
+    }
+
+    // Helper method to compute multiset permutations: L! / (f0! * f1! * ... * f25!)
+    private long countPermutations(int[] freq, int length) {
+        long ways = 1;
+        int currentLen = 0;
+
+        // Compute combinations dynamically to prevent intermediate overflow
+        for (int count : freq) {
+            for (int i = 1; i <= count; i++) {
+                currentLen++;
+                ways = ways * currentLen / i;
+                if (ways > CAP) {
+                    ways = CAP; // Cap to avoid overflow
+                }
+            }
+        }
+
+        return ways;
+    }
+}
 ```
 
 #### C++
